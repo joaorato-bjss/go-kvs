@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"my-kvs/server"
 	"my-kvs/server/logger"
+	"my-kvs/store"
 	"net/http"
 	"os"
 	"strconv"
@@ -26,6 +27,8 @@ func main() {
 
 	fmt.Printf("Listening on %v\n", port)
 	fmt.Printf("Logging to %v\n", logFile.Name())
+
+	store.InitStore()
 
 	mux := server.RegisterRoutes()
 

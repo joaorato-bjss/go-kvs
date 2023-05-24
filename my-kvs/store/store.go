@@ -18,14 +18,14 @@ var ErrNotFound = errors.New("not found")
 var ErrNotOwner = errors.New("not owner")
 
 var storage Store
-var requestChannel chan interface{}
+var requestChannel chan any
 
 func InitStore() {
 	storage = Store{
 		Data: make(map[string]Entry),
 	}
 
-	requestChannel = make(chan interface{})
+	requestChannel = make(chan any)
 
 	go listen()
 }
@@ -53,8 +53,35 @@ func listen() {
 			close(event.RespChannel)
 
 		case StoreDeleteRequest:
+			err := del(event.Key, event.User)
+			storeDeleteResponse := StoreDeleteResponse{
+				Error: err,
+			}
+
+			event.RespChannel <- storeDeleteResponse
+			close(event.RespChannel)
+
 		case ListGetRequest:
+			owner, err := list(event.Key)
+			listGetResponse := ListGetResponse{
+				Data: struct {
+					Key   string `json:"key"`
+					Owner string `json:"owner"`
+				}{event.Key, owner},
+				Error: err,
+			}
+
+			event.RespChannel <- listGetResponse
+			close(event.RespChannel)
+
 		case ListGetAllRequest:
+			data := listAll()
+			listGetAllResponse := ListGetAllResponse{
+				Data: data,
+			}
+
+			event.RespChannel <- listGetAllResponse
+			close(event.RespChannel)
 		}
 	}
 }
@@ -87,6 +114,54 @@ func get(key string) (any, error) {
 	}
 
 	return entry.Value, nil
+}
+
+func del(key string, user string) error {
+	entry, ok := storage.Data[key]
+
+	if !ok {
+		return fmt.Errorf("delete: key %q: %w", key, ErrNotFound)
+	}
+
+	if !authorised(user, entry.Owner) {
+		return fmt.Errorf("delete: %q %w of %q", user, ErrNotOwner, key)
+	}
+
+	delete(storage.Data, key)
+
+	return nil
+}
+
+func list(key string) (string, error) {
+
+	entry, ok := storage.Data[key]
+
+	if !ok {
+		return "", fmt.Errorf("list: key %q: %w", key, ErrNotFound)
+	}
+
+	return entry.Owner, nil
+}
+
+func listAll() []struct {
+	Key   string `json:"key"`
+	Owner string `json:"owner"`
+} {
+
+	data := storage.Data
+	entries := make([]struct {
+		Key   string `json:"key"`
+		Owner string `json:"owner"`
+	}, 0, len(data))
+
+	for key, entry := range data {
+		entries = append(entries, struct {
+			Key   string `json:"key"`
+			Owner string `json:"owner"`
+		}{key, entry.Owner})
+	}
+
+	return entries
 }
 
 func authorised(user, owner string) bool {

@@ -9,7 +9,7 @@ func RegisterRoutes() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/ping", handlers.Ping)
-	mux.HandleFunc("store/", handlers.Store)
+	mux.HandleFunc("/store/", handlers.Store)
 
 	return mux
 }
