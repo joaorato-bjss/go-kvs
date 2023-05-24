@@ -10,6 +10,8 @@ func RegisterRoutes() *http.ServeMux {
 
 	mux.HandleFunc("/ping", handlers.Ping)
 	mux.HandleFunc("/store/", handlers.Store)
+	mux.HandleFunc("/list/", handlers.List)
+	mux.HandleFunc("/list", handlers.ListAll)
 
 	return mux
 }
