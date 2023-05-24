@@ -6,7 +6,7 @@ import (
 )
 
 type Store struct {
-	Data map[string]Entry
+	Data map[string]*Entry
 }
 
 type Entry struct {
@@ -22,7 +22,7 @@ var requestChannel chan any
 
 func InitStore() {
 	storage = Store{
-		Data: make(map[string]Entry),
+		Data: make(map[string]*Entry),
 	}
 
 	requestChannel = make(chan any)
@@ -87,7 +87,7 @@ func listen() {
 }
 
 func put(key string, user string, value any) error {
-	var entry Entry
+	var entry *Entry
 
 	element, ok := storage.Data[key]
 
@@ -99,7 +99,7 @@ func put(key string, user string, value any) error {
 		element.Value = value
 	} else {
 		// create value anew
-		entry = Entry{Owner: user, Value: value}
+		entry = &Entry{Owner: user, Value: value}
 		storage.Data[key] = entry
 	}
 
