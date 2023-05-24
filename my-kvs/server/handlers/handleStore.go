@@ -8,7 +8,7 @@ import (
 func Store(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPut:
-
+		//response := store.DoStorePut()
 	case http.MethodGet:
 
 	case http.MethodDelete:
