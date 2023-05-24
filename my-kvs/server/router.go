@@ -12,6 +12,7 @@ func RegisterRoutes() *http.ServeMux {
 	mux.HandleFunc("/store/", handlers.Store)
 	mux.HandleFunc("/list/", handlers.List)
 	mux.HandleFunc("/list", handlers.ListAll)
+	mux.HandleFunc("/shutdown", handlers.Shutdown)
 
 	return mux
 }
