@@ -9,22 +9,17 @@ import (
 
 func Shutdown(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		user := r.Header.Get("Authorization")
-
-		if user == "" {
-			logger.ErrorLogger.Printf("bad request, should provide a user under the Authorization header")
-			w.WriteHeader(http.StatusBadRequest)
-			_, err := w.Write([]byte("user not provided"))
-			if err != nil {
-				logger.ErrorLogger.Printf("error writing 'user not provided' response: %s", err.Error())
-			}
+		valid, user := Authorise(w, r)
+		if !valid {
 			return
-		} else if user != "admin" {
+		}
+
+		if user != "admin" {
 			logger.ErrorLogger.Printf("forbidden operation, user is not admin")
 			w.WriteHeader(http.StatusForbidden)
-			_, err := w.Write([]byte("user is not admin"))
+			_, err := w.Write([]byte("Forbidden"))
 			if err != nil {
-				logger.ErrorLogger.Printf("error writing 'user is not admin' response: %s", err.Error())
+				logger.ErrorLogger.Printf("error writing 'Forbidden: user is not admin' response: %s", err.Error())
 			}
 			return
 		}

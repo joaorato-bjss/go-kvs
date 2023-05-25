@@ -26,15 +26,9 @@ func Store(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleStorePut(key string, w http.ResponseWriter, r *http.Request) {
-	user := r.Header.Get("Authorization")
 
-	if user == "" {
-		logger.ErrorLogger.Printf("bad request, should provide a user under the Authorization header")
-		w.WriteHeader(http.StatusBadRequest)
-		_, err := w.Write([]byte("user not provided"))
-		if err != nil {
-			logger.ErrorLogger.Printf("error writing 'user not provided' response: %s", err.Error())
-		}
+	valid, user := Authorise(w, r)
+	if !valid {
 		return
 	}
 
@@ -142,15 +136,8 @@ func handleStoreGet(key string, w http.ResponseWriter) {
 
 func handleStoreDelete(key string, w http.ResponseWriter, r *http.Request) {
 
-	user := r.Header.Get("Authorization")
-
-	if user == "" {
-		logger.ErrorLogger.Printf("bad request, should provide a user under the Authorization header")
-		w.WriteHeader(http.StatusBadRequest)
-		_, err := w.Write([]byte("user not provided"))
-		if err != nil {
-			logger.ErrorLogger.Printf("error writing 'user not provided' response: %s", err.Error())
-		}
+	valid, user := Authorise(w, r)
+	if !valid {
 		return
 	}
 
