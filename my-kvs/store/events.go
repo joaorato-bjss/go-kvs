@@ -46,8 +46,11 @@ type ListGetRequest struct {
 
 type ListGetResponse struct {
 	Data struct {
-		Key   string `json:"key"`
-		Owner string `json:"owner"`
+		Key    string `json:"key"`
+		Owner  string `json:"owner"`
+		Writes int    `json:"writes"`
+		Reads  int    `json:"reads"`
+		Age    int64  `json:"age"`
 	}
 	Error error
 }
@@ -59,8 +62,11 @@ type ListGetAllRequest struct {
 
 type ListGetAllResponse struct {
 	Data []struct {
-		Key   string `json:"key"`
-		Owner string `json:"owner"`
+		Key    string `json:"key"`
+		Owner  string `json:"owner"`
+		Writes int    `json:"writes"`
+		Reads  int    `json:"reads"`
+		Age    int64  `json:"age"`
 	}
 	Error error
 }

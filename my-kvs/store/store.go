@@ -3,6 +3,7 @@ package store
 import (
 	"errors"
 	"fmt"
+	"time"
 )
 
 type Store struct {
@@ -10,8 +11,11 @@ type Store struct {
 }
 
 type Entry struct {
-	Owner string `json:"owner"`
-	Value any    `json:"value"`
+	Owner        string    `json:"owner"`
+	Value        any       `json:"value"`
+	Writes       int       `json:"writes"`
+	Reads        int       `json:"reads"`
+	LastAccessed time.Time `json:"lastAccessed"`
 }
 
 var ErrNotFound = errors.New("not found")
@@ -62,12 +66,15 @@ func listen() {
 			close(event.RespChannel)
 
 		case ListGetRequest:
-			owner, err := list(event.Key)
+			owner, writes, reads, age, err := list(event.Key)
 			listGetResponse := ListGetResponse{
 				Data: struct {
-					Key   string `json:"key"`
-					Owner string `json:"owner"`
-				}{event.Key, owner},
+					Key    string `json:"key"`
+					Owner  string `json:"owner"`
+					Writes int    `json:"writes"`
+					Reads  int    `json:"reads"`
+					Age    int64  `json:"age"`
+				}{event.Key, owner, writes, reads, age},
 				Error: err,
 			}
 
@@ -97,9 +104,11 @@ func put(key string, user string, value any) error {
 			return fmt.Errorf("put: %q %w of %q", user, ErrNotOwner, key)
 		}
 		element.Value = value
+		element.Writes += 1
+		element.LastAccessed = time.Now()
 	} else {
 		// create value anew
-		entry = &Entry{Owner: user, Value: value}
+		entry = &Entry{Owner: user, Value: value, Writes: 1, Reads: 0, LastAccessed: time.Now()}
 		storage.Data[key] = entry
 	}
 
@@ -112,7 +121,8 @@ func get(key string) (any, error) {
 	if !ok {
 		return "", fmt.Errorf("get: key: %q: %w", key, ErrNotFound)
 	}
-
+	entry.Reads += 1
+	entry.LastAccessed = time.Now()
 	return entry.Value, nil
 }
 
@@ -132,33 +142,45 @@ func del(key string, user string) error {
 	return nil
 }
 
-func list(key string) (string, error) {
+func list(key string) (string, int, int, int64, error) {
 
 	entry, ok := storage.Data[key]
 
 	if !ok {
-		return "", fmt.Errorf("list: key %q: %w", key, ErrNotFound)
+		return "", 0, 0, 0, fmt.Errorf("list: key %q: %w", key, ErrNotFound)
 	}
 
-	return entry.Owner, nil
+	age := int64(time.Since(entry.LastAccessed) / time.Millisecond)
+
+	return entry.Owner, entry.Writes, entry.Reads, age, nil
 }
 
 func listAll() []struct {
-	Key   string `json:"key"`
-	Owner string `json:"owner"`
+	Key    string `json:"key"`
+	Owner  string `json:"owner"`
+	Writes int    `json:"writes"`
+	Reads  int    `json:"reads"`
+	Age    int64  `json:"age"`
 } {
 
 	data := storage.Data
 	entries := make([]struct {
-		Key   string `json:"key"`
-		Owner string `json:"owner"`
+		Key    string `json:"key"`
+		Owner  string `json:"owner"`
+		Writes int    `json:"writes"`
+		Reads  int    `json:"reads"`
+		Age    int64  `json:"age"`
 	}, 0, len(data))
 
 	for key, entry := range data {
+		age := int64(time.Since(entry.LastAccessed) / time.Millisecond)
 		entries = append(entries, struct {
-			Key   string `json:"key"`
-			Owner string `json:"owner"`
-		}{key, entry.Owner})
+			Key    string `json:"key"`
+			Owner  string `json:"owner"`
+			Writes int    `json:"writes"`
+			Reads  int    `json:"reads"`
+			Age    int64  `json:"age"`
+		}{key, entry.Owner, entry.Writes, entry.Reads, age})
 	}
 
 	return entries
