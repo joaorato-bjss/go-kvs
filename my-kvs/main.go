@@ -21,6 +21,9 @@ func main() {
 
 	args := os.Args
 
+	depth := setDepth(args)
+	fmt.Printf("Depth of LRU: %v\n", depth)
+
 	port := setPort(args)
 
 	logger.InfoLogger.Println("Spinning up server")
@@ -28,7 +31,7 @@ func main() {
 	fmt.Printf("Listening on %v\n", port)
 	fmt.Printf("Logging to %v\n", logFile.Name())
 
-	store.InitStore()
+	store.InitStore(depth)
 
 	mux := server.RegisterRoutes()
 
@@ -38,7 +41,7 @@ func main() {
 }
 
 func setPort(args []string) string {
-	if len(args) != 3 || args[1] != "--port" {
+	if len(args) < 3 || args[1] != "--port" {
 		logger.ErrorLogger.Fatal("exit code -1: format should be './store --port <port>'")
 	}
 	port, err := strconv.Atoi(args[2])
@@ -46,4 +49,16 @@ func setPort(args []string) string {
 		logger.ErrorLogger.Fatalf("exit code -1: failure to parse %s into an integer port", args[2])
 	}
 	return fmt.Sprintf(":%d", port)
+}
+
+func setDepth(args []string) int {
+	if len(args) == 5 && args[3] == "--depth" {
+		depth, err := strconv.Atoi(args[4])
+		if err != nil {
+			logger.ErrorLogger.Fatalf("exit code -1: failure to parse %s into an integer depth", args[4])
+		}
+		return depth
+	}
+
+	return 0
 }

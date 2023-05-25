@@ -23,13 +23,18 @@ var ErrNotOwner = errors.New("not owner")
 
 var storage Store
 var requestChannel chan any
+var depth int
 
-func InitStore() {
+func InitStore(d int) {
 	storage = Store{
 		Data: make(map[string]*Entry),
 	}
 
 	requestChannel = make(chan any)
+
+	if d > 0 {
+		depth = d
+	}
 
 	go listen()
 }
@@ -109,7 +114,17 @@ func put(key string, user string, value any) error {
 	} else {
 		// create value anew
 		entry = &Entry{Owner: user, Value: value, Writes: 1, Reads: 0, LastAccessed: time.Now()}
+
+		// check if size is equal to depth
+		storeSize := len(storage.Data)
+
+		if depth > 0 && storeSize >= depth {
+			deleteLeastRecent()
+		}
+
+		// insert new value into store
 		storage.Data[key] = entry
+
 	}
 
 	return nil
@@ -192,4 +207,17 @@ func authorised(user, owner string) bool {
 	}
 
 	return user == owner
+}
+
+func deleteLeastRecent() {
+	lruKey := "0"
+	lrDate := time.Now()
+	for key, entry := range storage.Data {
+		if entry.LastAccessed.Before(lrDate) {
+			lrDate = entry.LastAccessed
+			lruKey = key
+		}
+	}
+
+	delete(storage.Data, lruKey)
 }
