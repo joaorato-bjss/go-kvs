@@ -2,6 +2,7 @@ package logger
 
 import (
 	"log"
+	"net/http"
 	"os"
 )
 
@@ -20,4 +21,12 @@ func SetLogs() *os.File {
 	ErrorLogger = log.New(file, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
 
 	return file
+}
+
+func LogWrapper(endpoint func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		//log here
+		InfoLogger.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+		endpoint(w, r)
+	}
 }

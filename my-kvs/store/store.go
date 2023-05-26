@@ -210,8 +210,14 @@ func authorised(user, owner string) bool {
 }
 
 func deleteLeastRecent() {
-	lruKey := "0"
+	lruKey := ""
 	lrDate := time.Now()
+
+	for key := range storage.Data {
+		lruKey = key
+		break
+	}
+
 	for key, entry := range storage.Data {
 		if entry.LastAccessed.Before(lrDate) {
 			lrDate = entry.LastAccessed
